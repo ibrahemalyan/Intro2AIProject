@@ -24,8 +24,23 @@ class GameRenderer:
         self.distance_between_dots = self.size_of_board / (number_of_dots)
         self.LEFT_CLICK = '<Button-1>'
 
+        # Score-related attributes
+        self.player1_score = 0
+        self.player2_score = 0
+        self.score_text_handle = None
+
     def mainloop(self):
         self.window.mainloop()
+
+    def display_scores(self):
+        score_text = f"Player 1: {self.player1_score}  |  Player 2: {self.player2_score}"
+        if self.score_text_handle is not None:
+            self.canvas.delete(self.score_text_handle)
+        self.score_text_handle = self.canvas.create_text(self.size_of_board / 2,
+                                                         self.size_of_board - 20,
+                                                         font="cmr 15 bold",
+                                                         fill="black",
+                                                         text=score_text)
 
     def convert_grid_to_logical_position(self, grid_position):
         grid_position = np.array(grid_position)
@@ -54,6 +69,13 @@ class GameRenderer:
         end_x = start_x + self.distance_between_dots - self.edge_width
         end_y = start_y + self.distance_between_dots - self.edge_width
         self.canvas.create_rectangle(start_x, start_y, end_x, end_y, fill=color, outline='')
+
+        # Update the score based on the player who completed the box
+        if player == 1:
+            self.player1_score += 1
+        else:
+            self.player2_score += 1
+        self.display_scores()
 
     def make_edge(self, type, logical_position, player_turn):
         if self.game_start:

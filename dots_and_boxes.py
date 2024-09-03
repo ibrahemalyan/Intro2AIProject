@@ -1,8 +1,7 @@
 import numpy as np
 from game_state import GameState
 from game_renderer import GameRenderer
-from player import Player
-
+from players.player import Player
 
 class Dots_and_Boxes():
     def __init__(self, renderer: GameRenderer, games_num=100, number_of_dots=4, player1: Player = None,
@@ -53,16 +52,17 @@ class Dots_and_Boxes():
 
         return occupied
 
+
     def mark_box(self):
         boxes = np.argwhere(self.board_status == -4)
         for box in boxes:
-            if list(box) not in self.already_marked_boxes and list(box) != []:
+            if list(box) not in self.already_marked_boxes and list(box) !=[]:
                 self.already_marked_boxes.append(list(box))
                 self.renderer.shade_box(box, 1)
 
         boxes = np.argwhere(self.board_status == 4)
         for box in boxes:
-            if list(box) not in self.already_marked_boxes and list(box) != []:
+            if list(box) not in self.already_marked_boxes and list(box) !=[]:
                 self.already_marked_boxes.append(list(box))
                 self.renderer.shade_box(box, 2)
 
@@ -73,7 +73,7 @@ class Dots_and_Boxes():
         playerModifier = 1
         if self.player1_turn:
             playerModifier = -1
-        if y < (self.number_of_dots - 1) and x < (self.number_of_dots - 1):
+        if y < (self.number_of_dots-1) and x < (self.number_of_dots-1):
             self.board_status[y][x] = (abs(self.board_status[y][x]) + val) * playerModifier
             if abs(self.board_status[y][x]) == 4:
                 self.pointsScored = True
@@ -81,17 +81,16 @@ class Dots_and_Boxes():
         if type == 'row':
             self.row_status[y][x] = 1
             if y >= 1:
-                self.board_status[y - 1][x] = (abs(self.board_status[y - 1][x]) + val) * playerModifier
-                if abs(self.board_status[y - 1][x]) == 4:
+                self.board_status[y-1][x] = (abs(self.board_status[y-1][x]) + val) * playerModifier
+                if abs(self.board_status[y-1][x]) == 4:
                     self.pointsScored = True
 
         elif type == 'col':
             self.col_status[y][x] = 1
             if x >= 1:
-                self.board_status[y][x - 1] = (abs(self.board_status[y][x - 1]) + val) * playerModifier
-                if abs(self.board_status[y][x - 1]) == 4:
+                self.board_status[y][x-1] = (abs(self.board_status[y][x-1]) + val) * playerModifier
+                if abs(self.board_status[y][x-1]) == 4:
                     self.pointsScored = True
-
     def is_gameover(self):
         return (self.row_status == 1).all() and (self.col_status == 1).all()
 

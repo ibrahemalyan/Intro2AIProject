@@ -1,6 +1,5 @@
 from numpy import ndarray
 
-
 class GameState:
     """
     board_status: int[][]
@@ -19,7 +18,6 @@ class GameState:
     player1_turn: bool
         True if it is player 1 turn, False for player 2.
     """
-
     def __init__(self, board_status: ndarray, row_status: ndarray, col_status: ndarray, player1_turn: bool):
         self.board_status = board_status
         self.row_status = row_status
