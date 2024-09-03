@@ -1,0 +1,20 @@
+This is for the use of the team. It should be changed when submitting the project
+
+All you need to implement is an AI that inherits from Player(abstract class).
+
+You will see that there is a method called "is_clickable()" which the human player has overriden.
+That's because to register its input, I need to click on the screen.
+"is_clickable()" shouldn't be added to the rest of the AI players (the default value is set to False)
+
+The AI will be called using the "get_action()" method. It will pass as parameters a GameState object.
+The GameState objects has everything that is needed for the AIs. The possible action set will be the
+still available states. In the documentation I outlined what an empty box and what a taken box will be like
+and what a line that was picked and one that is still empty looks like
+
+All you need to do is to implement the "get_action" method which gets state of the game and returns a GameAction
+The GameAction format is also written in the documentation of GameAction
+
+You also need to override the "get_player_name()" method which will showcase the name of the AI algorithm in the end
+screen
+
+There is a random player that is an example to how the AI models will be implemented
