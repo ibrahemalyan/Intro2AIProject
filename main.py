@@ -3,13 +3,13 @@ from dots_and_boxes import Dots_and_Boxes
 from game_renderer import GameRenderer
 from players.human_player import HumanPlayer
 from players.qlearning_agent import QLearningAgent
-
+from players.alpha_beta_agent import AlphaBetaPlayer
 
 
 
 if __name__ == "__main__":
     number_of_dots = 8
-    games_num = 10
+    games_num = 1
     renderer = GameRenderer(number_of_dots, True)
     # player1 = HumanPlayer(renderer)
     player1 = RandomPlayer()
