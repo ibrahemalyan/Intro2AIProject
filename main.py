@@ -1,14 +1,15 @@
-from random_player import RandomPlayer
+from players.random_player import RandomPlayer
 from dots_and_boxes import Dots_and_Boxes
 from game_renderer import GameRenderer
-from human_player import HumanPlayer
+from players.human_player import HumanPlayer
+from players.qlearning_agent import QLearningAgent
 
 
 
 
 if __name__ == "__main__":
-    number_of_dots = 4
-    games_num = 20
+    number_of_dots = 8
+    games_num = 10
     renderer = GameRenderer(number_of_dots, True)
     # player1 = HumanPlayer(renderer)
     player1 = RandomPlayer()
