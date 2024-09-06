@@ -146,6 +146,10 @@ class Dots_and_Boxes():
         current_player = self.player1 if self.player1_turn else self.player2
 
         if current_player.is_clickable():
+            if self.player1_turn:
+                self.player1.increment_steps()
+            else:
+                self.player2.increment_steps()
             self.renderer.window.bind(self.renderer.LEFT_CLICK, self.click)
         else:
             self.renderer.window.after(self.player_wait_time, self.player_turn, current_player)
