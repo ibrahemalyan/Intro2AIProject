@@ -1,12 +1,12 @@
 import numpy as np
 from game_state import GameState
-from player import Player
 from game_action import GameAction
-
+from players.player import Player
 
 
 class AlphaBetaPlayer(Player):
     def __init__(self, depth=3):
+        super().__init__()
         self.depth = depth
 
     def get_player_name(self):
