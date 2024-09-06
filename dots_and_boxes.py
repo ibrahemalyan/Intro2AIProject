@@ -126,10 +126,15 @@ class Dots_and_Boxes():
 
                 if player1_score > player2_score:
                     self.winner_scores[f"player1_{self.player1.get_player_name()}"] += 1
+                    print(f"{self.player1.get_player_name()} wins!")
+
                 elif player2_score > player1_score:
                     self.winner_scores[f"player2_{self.player2.get_player_name()}"] += 1
+                    print(f"{self.player2.get_player_name()} wins!")
                 else:
                     self.winner_scores["tie"] += 1
+                    print(f"Tie!")
+
                 self.renderer.restart_game(player1_score, player2_score)
                 self.play()
             else:
