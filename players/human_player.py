@@ -5,6 +5,7 @@ from players.player import Player
 
 class HumanPlayer(Player):
     def __init__(self, renderer:GameRenderer):
+        super().__init__()
         self.renderer = renderer
         self.name = "Human Player"
 
