@@ -5,6 +5,7 @@ from game_state import GameState
 from players.player import Player
 from typing import Tuple
 
+
 class QLearningAgent(Player):
     def __init__(self, epsilon=0.1, alpha=0.5, gamma=0.9):
         super().__init__()
