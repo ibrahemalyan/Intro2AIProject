@@ -1,98 +1,125 @@
-import numpy as np
 from game_state import GameState
-from game_action import GameAction
 from players.player import Player
+from game_action import GameAction
+import numpy as np
+import math
+from typing import Tuple
 
 
 class AlphaBetaPlayer(Player):
-    def __init__(self, depth=3):
+    def __init__(self, max_depth=3):
         super().__init__()
-        self.depth = depth
-
-    def get_player_name(self):
-        return "Alpha-Beta Player"
+        self.max_depth = max_depth  # The depth of the minimax search
 
     def get_action(self, state: GameState) -> GameAction:
-        best_action = None
-        best_value = float('-inf')
-        alpha = float('-inf')
-        beta = float('inf')
+        best_move, _ = self.alpha_beta_search(state, self.max_depth, -math.inf, math.inf, maximizing_player=True)
+        return best_move
 
-        for action in self.get_all_possible_actions_legal(state):
-            value = self.alpha_beta(self.result(state, action), self.depth, alpha, beta, False)
-            if value > best_value:
-                best_value = value
-                best_action = action
-            alpha = max(alpha, best_value)
+    def alpha_beta_search(self, state: GameState, depth: int, alpha: float, beta: float, maximizing_player: bool):
+        """
+        Alpha-beta pruning implementation of minimax.
+        """
+        if depth == 0 or self.is_terminal(state):
+            return None, self.evaluate(state)
 
-        return best_action
+        possible_actions = self.get_possible_actions(state)
 
-    def alpha_beta(self, state: GameState, depth: int, alpha: float, beta: float, is_maximizing: bool):
-        if  self.is_terminal(state) or depth==0 :
-            return self.evaluate(state)
-
-        if is_maximizing:
-            max_eval = float('-inf')
-            for action in self.get_all_possible_actions_legal(state):
-                eval = self.alpha_beta(self.result(state, action), depth - 1, alpha, beta, False)
-                max_eval = max(max_eval, eval)
+        if maximizing_player:
+            max_eval = -math.inf
+            best_action = None
+            for action_type, position in possible_actions:
+                new_state = self.simulate_action(state, action_type, position, maximizing_player=True)
+                _, eval = self.alpha_beta_search(new_state, depth - 1, alpha, beta, maximizing_player=False)
+                if eval > max_eval:
+                    max_eval = eval
+                    best_action = GameAction(action_type, position)
                 alpha = max(alpha, eval)
                 if beta <= alpha:
-                    break  # Beta cut-off
-            return max_eval
+                    break  # Beta cutoff
+            return best_action, max_eval
+
         else:
-            min_eval = float('inf')
-            for action in self.get_all_possible_actions_legal(state):
-                eval = self.alpha_beta(self.result(state, action), depth - 1, alpha, beta, True)
-                min_eval = min(min_eval, eval)
+            min_eval = math.inf
+            best_action = None
+            for action_type, position in possible_actions:
+                new_state = self.simulate_action(state, action_type, position, maximizing_player=False)
+                _, eval = self.alpha_beta_search(new_state, depth - 1, alpha, beta, maximizing_player=True)
+                if eval < min_eval:
+                    min_eval = eval
+                    best_action = GameAction(action_type, position)
                 beta = min(beta, eval)
                 if beta <= alpha:
-                    break  # Alpha cut-off
-            return min_eval
+                    break  # Alpha cutoff
+            return best_action, min_eval
 
-    def evaluate(self, state: GameState):
-        # Implement your evaluation function here
-        player1_score = len(np.argwhere(state.board_status == -4))
-        player2_score = len(np.argwhere(state.board_status == 4))
-        return player1_score - player2_score
+    def simulate_action(self, state: GameState, action_type: str, position: Tuple[int, int], maximizing_player: bool) -> GameState:
+        """
+        Simulates taking an action in the current state. This function returns a new game state.
+        """
+        new_board_status = state.board_status.copy()
+        new_row_status = state.row_status.copy()
+        new_col_status = state.col_status.copy()
 
-    def is_terminal(self, state: GameState):
-        return (state.row_status == 1).all() and (state.col_status == 1).all()
+        x, y = position
 
-    def get_all_possible_actions_legal(self, state: GameState):
-        actions = []
-        for y in range(state.row_status.shape[0]):
-            for x in range(state.row_status.shape[1]):
-                if state.row_status[y][x] == 0:
-                    actions.append(GameAction('row', (x, y)))
+        playerModifier = 1 if maximizing_player else -1
 
-        for y in range(state.col_status.shape[0]):
-            for x in range(state.col_status.shape[1]):
-                if state.col_status[y][x] == 0:
-                    actions.append(GameAction('col', (x, y)))
-
-        return actions
-
-    def result(self, state: GameState, action: GameAction):
-        # Simulate the action and return the new state
-        new_state = GameState(
-            state.board_status.copy(),
-            state.row_status.copy(),
-            state.col_status.copy(),
-            not state.player1_turn
-        )
-        x, y = action.position
-        if action.action_type == 'row':
-            new_state.row_status[y][x] = 1
-            if y < new_state.board_status.shape[0]:
-                new_state.board_status[y][x] += 1 if new_state.player1_turn else -1
+        if action_type == 'row':
+            new_row_status[y][x] = 1
+            if y < len(new_board_status):
+                new_board_status[y][x] += playerModifier
             if y > 0:
-                new_state.board_status[y - 1][x] += 1 if new_state.player1_turn else -1
-        elif action.action_type =='col':
-            new_state.col_status[y][x] = 1
-            if x < new_state.board_status.shape[1]:
-                new_state.board_status[y][x] += 1 if new_state.player1_turn else -1
+                new_board_status[y - 1][x] += playerModifier
+
+        elif action_type == 'col':
+            new_col_status[y][x] = 1
+            if x < len(new_board_status[0]):
+                new_board_status[y][x] += playerModifier
             if x > 0:
-                new_state.board_status[y][x - 1] += 1 if new_state.player1_turn else -1
+                new_board_status[y][x - 1] += playerModifier
+
+        new_state = GameState(
+            board_status=new_board_status,
+            row_status=new_row_status,
+            col_status=new_col_status,
+            player1_turn=not state.player1_turn
+        )
 
         return new_state
+
+    def get_possible_actions(self, state: GameState) -> list:
+        """
+        Return a list of possible actions given the current game state.
+        """
+        possible_actions = []
+
+        # Check for available rows and columns (not yet marked)
+        for y in range(len(state.row_status)):
+            for x in range(len(state.row_status[0])):
+                if state.row_status[y][x] == 0:  # Available row
+                    possible_actions.append(('row', (x, y)))
+
+        for y in range(len(state.col_status)):
+            for x in range(len(state.col_status[0])):
+                if state.col_status[y][x] == 0:  # Available col
+                    possible_actions.append(('col', (x, y)))
+
+        return possible_actions
+
+    def is_terminal(self, state: GameState) -> bool:
+        """
+        Checks if the game is over (all rows and columns are marked).
+        """
+        return np.all(state.row_status == 1) and np.all(state.col_status == 1)
+
+    def evaluate(self, state: GameState) -> float:
+        """
+        Evaluates the game state. Positive values favor the maximizing player (Player 1),
+        while negative values favor the minimizing player (Player 2).
+        """
+        player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
+        player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
+        return player1_score - player2_score
+
+    def get_player_name(self) -> str:
+        return "AlphaBetaPlayer"
