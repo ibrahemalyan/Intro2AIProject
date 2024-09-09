@@ -4,10 +4,8 @@ from game_action import GameAction
 from players.player import Player
 import random
 
-
 class QLearningAgent(Player):
     def __init__(self, learning_rate=0.1, discount_factor=0.95, exploration_rate=1.0, exploration_decay=0.995):
-        super().__init__()
         self.q_table = {}  # {(state, action): q_value}
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -30,8 +28,7 @@ class QLearningAgent(Player):
         prev_state_tuple = self.state_to_tuple(prev_state)
         next_state_tuple = self.state_to_tuple(next_state)
         prev_q_value = self.q_table.get((prev_state_tuple, action), 0)
-        best_future_q = max(
-            [self.q_table.get((next_state_tuple, a), 0) for a in self.get_all_possible_actions(next_state)], default=0)
+        best_future_q = max([self.q_table.get((next_state_tuple, a), 0) for a in self.get_all_possible_actions(next_state)], default=0)
         new_q_value = prev_q_value + self.learning_rate * (reward + self.discount_factor * best_future_q - prev_q_value)
         self.q_table[(prev_state_tuple, action)] = new_q_value
 
@@ -72,8 +69,7 @@ class QLearningAgent(Player):
         return actions
 
     def state_to_tuple(self, state: GameState):
-        return (
-        tuple(state.board_status.flatten()), tuple(state.row_status.flatten()), tuple(state.col_status.flatten()))
+        return (tuple(state.board_status.flatten()), tuple(state.row_status.flatten()), tuple(state.col_status.flatten()))
 
     def update_exploration_rate(self):
         self.exploration_rate *= self.exploration_decay
