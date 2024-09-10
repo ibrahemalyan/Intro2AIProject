@@ -22,6 +22,7 @@ class Dots_and_Boxes():
         if self.games_num <= 0:
             self.renderer.display_final_score(self.winner_scores)
             return
+
         self.games_num -= 1
         self.board_status = np.zeros(shape=(self.number_of_dots - 1, self.number_of_dots - 1))
         self.row_status = np.zeros(shape=(self.number_of_dots, self.number_of_dots - 1))
@@ -34,12 +35,12 @@ class Dots_and_Boxes():
         self.turntext_handle = []
 
         self.already_marked_boxes = []
+        self.renderer.refresh_board()
         self.renderer.display_turn_text(1 if self.player1_turn else 2)
         self.turn()
         if self.first_match:
             self.renderer.mainloop()
             self.first_match = False
-
     def is_grid_occupied(self, logical_position, type):
         x = logical_position[0]
         y = logical_position[1]
@@ -139,3 +140,4 @@ class Dots_and_Boxes():
             self.player1_turn
         ))
         self.update(action.action_type, action.position)
+

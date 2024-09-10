@@ -20,3 +20,6 @@ class ConsoleRenderer(Renderer):
     def restart_game(self, player1_score, player2_score):
         print(f"Game ended. Player 1: {player1_score}, Player 2: {player2_score}")
         self.refresh_board()
+
+    def window_scheduler(self, player_wait_time, player_turn, current_player):
+        player_turn(current_player)
