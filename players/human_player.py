@@ -1,11 +1,10 @@
 from game_action import GameAction
-from game_renderer import GameRenderer
+from Renderers.gui_renderer import GameRenderer
 from players.player import Player
 
 
 class HumanPlayer(Player):
     def __init__(self, renderer:GameRenderer):
-        super().__init__()
         self.renderer = renderer
         self.name = "Human Player"
 

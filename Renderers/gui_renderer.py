@@ -1,6 +1,8 @@
 from tkinter import *
 import numpy as np
-class GameRenderer:
+from Renderers.renderer import Renderer
+
+class GUI_Renderer(Renderer):
     def __init__(self, number_of_dots=4, show_round_end_screen=False):
         self.window = Tk()
         self.show_round_end_screen = show_round_end_screen
@@ -170,3 +172,9 @@ class GameRenderer:
             score_text += f'{key}: {val}\n''\n'
         self.canvas.create_text(self.size_of_board / 2, 3 * self.size_of_board / 4, font="cmr 40 bold", fill=self.Green_color,
                                 text=score_text)
+
+    def window_scheduler(self,player_wait_time,player_turn, current_player):
+        self.window.after(player_wait_time, player_turn, current_player)
+
+    def window_bind(self,click):
+        self.window.bind(self.LEFT_CLICK, click)

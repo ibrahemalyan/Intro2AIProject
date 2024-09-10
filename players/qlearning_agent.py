@@ -1,105 +1,79 @@
 import numpy as np
-import random
-from game_action import GameAction
 from game_state import GameState
+from game_action import GameAction
 from players.player import Player
-from typing import Tuple
+import random
 
 
 class QLearningAgent(Player):
-    def __init__(self, epsilon=0.1, alpha=0.5, gamma=0.9):
+    def __init__(self, learning_rate=0.1, discount_factor=0.95, exploration_rate=1.0, exploration_decay=0.995):
         super().__init__()
-        self.q_table = {}  # This will store the Q-values
-        self.epsilon = epsilon  # Exploration rate
-        self.alpha = alpha  # Learning rate
-        self.gamma = gamma  # Discount factor
-        self.last_state = None
-        self.last_action = None
-        self.last_reward = 0
+        self.q_table = {}  # {(state, action): q_value}
+        self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
+        self.exploration_rate = exploration_rate
+        self.exploration_decay = exploration_decay
+        self.name = "QLearning Agent"
 
-    def get_q_value(self, state: Tuple) -> np.ndarray:
-        """
-        Retrieve the Q-values for all actions in a given state.
-        If the state does not exist, it initializes it with 0 values.
-        """
-        if state not in self.q_table:
-            self.q_table[state] = np.zeros(2)  # Assuming two possible actions (row or col)
-        return self.q_table[state]
-
-    def update_q_value(self, state: Tuple, action_index: int, reward: float, next_state: Tuple):
-        """
-        Updates the Q-value using the Q-learning update rule.
-        """
-        current_q = self.get_q_value(state)[action_index]
-        future_q = max(self.get_q_value(next_state))  # Maximum Q-value of next state
-        new_q_value = current_q + self.alpha * (reward + self.gamma * future_q - current_q)
-        self.q_table[state][action_index] = new_q_value
-
-    def choose_action(self, state) -> GameAction:
-        """
-        Chooses an action based on the epsilon-greedy strategy.
-        """
-        possible_actions = self.get_possible_actions(state)
-        if random.uniform(0, 1) < self.epsilon:
-            # Exploration: choose a random action
-            action_type, position = random.choice(possible_actions)
-        else:
-            # Exploitation: choose the best action based on Q-values
-            action_type, position = self.get_best_action(state, possible_actions)
-        return GameAction(action_type, position)
-
-    def get_best_action(self, state, possible_actions):
-        """
-        Returns the action with the highest Q-value from the possible actions.
-        """
-        best_action = None
-        best_value = -float('inf')
-
-        for action_type, position in possible_actions:
-            action_index = 0 if action_type == 'row' else 1
-            q_value = self.get_q_value(state)[action_index]
-
-            if q_value > best_value:
-                best_value = q_value
-                best_action = (action_type, position)
-
-        return best_action
-
-    def get_possible_actions(self, state):
-        """
-        Return a list of possible actions given the current game state.
-        """
-        possible_actions = []
-
-        # Check for available rows and columns (not yet marked)
-        for y in range(len(state.row_status)):
-            for x in range(len(state.row_status[0])):
-                if state.row_status[y][x] == 0:  # Available row
-                    possible_actions.append(('row', (x, y)))
-
-        for y in range(len(state.col_status)):
-            for x in range(len(state.col_status[0])):
-                if state.col_status[y][x] == 0:  # Available col
-                    possible_actions.append(('col', (x, y)))
-
-        return possible_actions
+    def get_player_name(self):
+        return self.name
 
     def get_action(self, state: GameState) -> GameAction:
-        action = self.choose_action(state)
-        # Save last state and action for updating Q-table after receiving a reward
-        self.last_state = state
-        self.last_action = action
+        state_tuple = self.state_to_tuple(state)
+        if random.uniform(0, 1) < self.exploration_rate:
+            action = self.get_random_action(state)
+        else:
+            action = self.get_best_action(state_tuple)
         return action
 
-    def update_q_table_after_turn(self, reward: float, new_state):
-        """
-        After the environment responds with a reward and a new state,
-        update the Q-table for the previous action.
-        """
-        new_state_key = (tuple(map(tuple, new_state.row_status)), tuple(map(tuple, new_state.col_status)))
+    def update_q_value(self, prev_state, action, reward, next_state):
+        prev_state_tuple = self.state_to_tuple(prev_state)
+        next_state_tuple = self.state_to_tuple(next_state)
+        prev_q_value = self.q_table.get((prev_state_tuple, action), 0)
+        best_future_q = max(
+            [self.q_table.get((next_state_tuple, a), 0) for a in self.get_all_possible_actions(next_state)], default=0)
+        new_q_value = prev_q_value + self.learning_rate * (reward + self.discount_factor * best_future_q - prev_q_value)
+        self.q_table[(prev_state_tuple, action)] = new_q_value
 
-        action_index = 0 if self.last_action.action_type == 'row' else 1
-        self.update_q_value(self.last_state, action_index, reward, new_state_key)
+    def get_best_action(self, state_tuple):
+        possible_actions = self.get_all_possible_actions(state_tuple)
+        best_action = max(possible_actions, key=lambda action: self.q_table.get((state_tuple, action), 0))
+        return best_action
 
-    def get_player_name(self) -> str:
-        return "QLearningAgent"
+    def get_random_action(self, state: GameState) -> GameAction:
+        action_type = random.choice(["row", "col"])
+        if action_type == "row":
+            position = self.get_random_position_with_zero_value(state.row_status)
+        else:
+            position = self.get_random_position_with_zero_value(state.col_status)
+        return GameAction(action_type, position)
+
+    def get_random_position_with_zero_value(self, matrix: np.ndarray):
+        [ny, nx] = matrix.shape
+        x = -1
+        y = -1
+        valid = False
+        while not valid:
+            x = random.randrange(0, nx)
+            y = random.randrange(0, ny)
+            valid = matrix[y, x] == 0
+        return (x, y)
+
+    def get_all_possible_actions(self, state: GameState):
+        actions = []
+        for y, row in enumerate(state.row_status):
+            for x, val in enumerate(row):
+                if val == 0:
+                    actions.append(GameAction("row", (x, y)))
+        for y, col in enumerate(state.col_status):
+            for x, val in enumerate(col):
+                if val == 0:
+                    actions.append(GameAction("col", (x, y)))
+        return actions
+
+    def state_to_tuple(self, state: GameState):
+        return (
+        tuple(state.board_status.flatten()), tuple(state.row_status.flatten()), tuple(state.col_status.flatten()))
+
+    def update_exploration_rate(self):
+        self.exploration_rate *= self.exploration_decay
