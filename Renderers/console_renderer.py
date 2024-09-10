@@ -7,7 +7,7 @@ class ConsoleRenderer(Renderer):
 
     def refresh_board(self):
         # Initializes the board and prints the starting state
-        print(f"Starting a new game with {self.number_of_dots} dots.")
+        pass
 
     def display_gameover(self, player1_score, player2_score):
         print(f"Final Scores - Player 1: {player1_score}, Player 2: {player2_score}")
@@ -23,3 +23,4 @@ class ConsoleRenderer(Renderer):
 
     def window_scheduler(self, player_wait_time, player_turn, current_player):
         player_turn(current_player)
+
