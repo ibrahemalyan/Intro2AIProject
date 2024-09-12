@@ -8,6 +8,8 @@ from players.player import Player
 from game_action import GameAction
 from typing import Tuple, Dict, List
 from collections import defaultdict
+
+
 class MCTSNode:
     def __init__(self, state, parent=None):
         self.state = state  # The game state
@@ -39,6 +41,8 @@ class MCTSNode:
         Add a child node for the given action.
         """
         self.children[action] = child_node
+
+
 class MCTSPlayer(Player):
     def __init__(self, simulations=10):
         super().__init__()
@@ -92,7 +96,8 @@ class MCTSPlayer(Player):
         while not self.is_terminal(current_state):
             possible_actions = self.get_possible_actions(current_state)
             action = random.choice(possible_actions)  # Play random actions
-            current_state = self.simulate_action(current_state, action.action_type, action.position, current_state.player1_turn)
+            current_state = self.simulate_action(current_state, action.action_type, action.position,
+                                                 current_state.player1_turn)
 
         # Return the final score (1 for player1 win, -1 for player2 win, 0 for tie)
         return self.evaluate_terminal_state(current_state)
@@ -107,7 +112,8 @@ class MCTSPlayer(Player):
             reward = -reward  # Alternate reward between players
             node = node.parent
 
-    def simulate_action(self, state: GameState, action_type: str, position: Tuple[int, int], player1_turn: bool) -> GameState:
+    def simulate_action(self, state: GameState, action_type: str, position: Tuple[int, int],
+                        player1_turn: bool) -> GameState:
         """
         Simulate taking an action in the current state. This function returns a new game state.
         """

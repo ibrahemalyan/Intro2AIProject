@@ -19,13 +19,14 @@ if __name__ == "__main__":
 
     for i in range(10):
         player1 = AlphaBetaPlayer()
-        player2 = RandomPlayer()
+        player2 = ExpectimaxPlayer()
         game_instance = Dots_and_Boxes(renderer=renderer, games_num=games_num, number_of_dots=number_of_dots,
                                        player1=player1, player2=player2)
         game_instance.play()
         score1 += game_instance.get_player1_score()
         score2 += game_instance.get_player2_score()
         tie += game_instance.get_tie()
+
     print(f"Player 1: {score1}")
     print(f"Player 2: {score2}")
     print(f"Tie: {tie}")

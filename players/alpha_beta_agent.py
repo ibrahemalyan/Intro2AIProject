@@ -51,10 +51,33 @@ class AlphaBetaPlayer(Player):
             return min_eval
 
     def evaluate(self, state: GameState):
-        # Implement your evaluation function here
+        # Current score for both players
         player1_score = len(np.argwhere(state.board_status == -4))
         player2_score = len(np.argwhere(state.board_status == 4))
-        return player1_score - player2_score
+
+        # Evaluate potential future box completions
+        potential_boxes_player1 = 0
+        potential_boxes_player2 = 0
+
+        for y in range(state.board_status.shape[0]):
+            for x in range(state.board_status.shape[1]):
+                # Count how many sides of the box are filled
+                if state.board_status[y][x] == -3:  # Player 1 is about to complete this box
+                    potential_boxes_player1 += 1
+                elif state.board_status[y][x] == 3:  # Player 2 is about to complete this box
+                    potential_boxes_player2 += 1
+
+        # Difference in current score + potential boxes that could be completed
+        score_difference = (player1_score + potential_boxes_player1) - (player2_score + potential_boxes_player2)
+
+        # Adding weights for strategic positioning
+        # Player who can complete a box next turn gains more value
+        if state.player1_turn:
+            score_difference += potential_boxes_player1 * 2  # Bias towards player 1's turn
+        else:
+            score_difference -= potential_boxes_player2 * 2  # Bias towards player 2's turn
+
+        return score_difference
 
     def is_terminal(self, state: GameState):
         return (state.row_status == 1).all() and (state.col_status == 1).all()
