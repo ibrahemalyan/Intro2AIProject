@@ -64,7 +64,7 @@ class AlphaBetaPlayer(Player):
             max_eval = -math.inf
             for action in valid_moves:
                 new_state = state.generate_successor(action)
-                eval_score, _ = self.alpha_beta_search(new_state, depth - 1, alpha, beta, False)
+                eval_score, _ = self.alpha_beta_search(new_state, depth - 1, alpha, beta, new_state.player1_turn)
                 if eval_score > max_eval:
                     max_eval = eval_score
                     best_move = action
@@ -76,7 +76,7 @@ class AlphaBetaPlayer(Player):
             min_eval = math.inf
             for action in valid_moves:
                 new_state = state.generate_successor(action)
-                eval_score, _ = self.alpha_beta_search(new_state, depth - 1, alpha, beta, True)
+                eval_score, _ = self.alpha_beta_search(new_state, depth - 1, alpha, beta, new_state.player1_turn)
                 if eval_score < min_eval:
                     min_eval = eval_score
                     best_move = action
@@ -88,7 +88,7 @@ class AlphaBetaPlayer(Player):
     def score_diff(self, state: GameState):
         player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
         player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
-        return player1_score - player2_score
+        return  player2_score - player1_score
 
 
     def evaluate(self, state: GameState):
@@ -96,7 +96,7 @@ class AlphaBetaPlayer(Player):
         chain_length_score = self.chain_length_evaluation(state)
 
         # Combine score difference and chain length score
-        total_evaluation = -score_diff
+        total_evaluation = score_diff
 
         print(f"Score diff: {score_diff}")
         return total_evaluation
