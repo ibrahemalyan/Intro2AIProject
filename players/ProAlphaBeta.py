@@ -1,11 +1,4 @@
-import numpy as np
-from game_state import GameState
-from game_action import GameAction
-from players.player import Player
-
-
 from typing import Tuple, Literal
-
 from players.player import Player
 from game_action import GameAction
 from game_state import GameState
@@ -50,6 +43,9 @@ class ProAlphaBetaPlayer(Player):
         free_box = self.check_for_free_boxes(state)
         if free_box:
             return GameAction(free_box[1], free_box[0])
+
+        if self.is_broken_chain_or_loop(state):
+            return self.take_free_move(state)
 
         # Start Alpha-Beta Minimax
         best_score, best_action = self.alpha_beta_search(state, self.depth, -math.inf, math.inf, True)
