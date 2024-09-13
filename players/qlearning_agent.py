@@ -1,79 +1,109 @@
 import numpy as np
-from game_state import GameState
+import random
+import pickle
 from game_action import GameAction
 from players.player import Player
-import random
-
 
 class QLearningAgent(Player):
-    def __init__(self, learning_rate=0.1, discount_factor=0.95, exploration_rate=1.0, exploration_decay=0.995):
+    def __init__(self, number_of_dots=4, epsilon=0.05, alpha=0.01, gamma=0.9, load_q_table=False, q_table_file="q_table.pkl"):
         super().__init__()
-        self.q_table = {}  # {(state, action): q_value}
-        self.learning_rate = learning_rate
-        self.discount_factor = discount_factor
-        self.exploration_rate = exploration_rate
-        self.exploration_decay = exploration_decay
-        self.name = "QLearning Agent"
+        self.epsilon = epsilon  # Exploration rate
+        self.alpha = alpha  # Learning rate
+        self.gamma = gamma  # Discount factor
+        self.q_table = {}  # Q-value table
+        self.number_of_dots = number_of_dots
+        self.last_state = None
+        self.last_action = None
+        self.last_reward = 0
+        self.player_name = "QLearningAgent"
+        self.q_table_file = q_table_file
 
-    def get_player_name(self):
-        return self.name
+        if load_q_table:
+            self.load_q_table()
 
-    def get_action(self, state: GameState) -> GameAction:
-        state_tuple = self.state_to_tuple(state)
-        if random.uniform(0, 1) < self.exploration_rate:
-            action = self.get_random_action(state)
+    def get_state(self, board_status, row_status, col_status):
+        # Flatten and tuple the board status for a simplified state representation
+        return (tuple(board_status.flatten()), tuple(row_status.flatten()), tuple(col_status.flatten()))
+
+    def choose_action(self, state, available_actions):
+        # Choose action based on epsilon-greedy policy
+        if np.random.rand() < self.epsilon:
+            return random.choice(available_actions)
         else:
-            action = self.get_best_action(state_tuple)
-        return action
+            q_values = np.array([self.q_table.get((state, action), 0) for action in available_actions])
+            max_q = np.max(q_values)
+            best_actions = [action for action, q_value in zip(available_actions, q_values) if q_value == max_q]
+            return random.choice(best_actions)
 
-    def update_q_value(self, prev_state, action, reward, next_state):
-        prev_state_tuple = self.state_to_tuple(prev_state)
-        next_state_tuple = self.state_to_tuple(next_state)
-        prev_q_value = self.q_table.get((prev_state_tuple, action), 0)
-        best_future_q = max(
-            [self.q_table.get((next_state_tuple, a), 0) for a in self.get_all_possible_actions(next_state)], default=0)
-        new_q_value = prev_q_value + self.learning_rate * (reward + self.discount_factor * best_future_q - prev_q_value)
-        self.q_table[(prev_state_tuple, action)] = new_q_value
+    def update_q_table(self, state, action, reward, next_state, next_available_actions):
+        old_value = self.q_table.get((state, action), 0)
+        future_q = max([self.q_table.get((next_state, a), 0) for a in next_available_actions], default=0)
+        new_value = old_value + self.alpha * (reward + self.gamma * future_q - old_value)
+        self.q_table[(state, action)] = new_value
 
-    def get_best_action(self, state_tuple):
-        possible_actions = self.get_all_possible_actions(state_tuple)
-        best_action = max(possible_actions, key=lambda action: self.q_table.get((state_tuple, action), 0))
-        return best_action
+    def get_action(self, game_state) -> GameAction:
+        current_state = self.get_state(game_state.board_status, game_state.row_status, game_state.col_status)
+        available_actions = self.get_available_actions(game_state)
 
-    def get_random_action(self, state: GameState) -> GameAction:
-        action_type = random.choice(["row", "col"])
-        if action_type == "row":
-            position = self.get_random_position_with_zero_value(state.row_status)
+        if self.last_state is not None:
+            self.update_q_table(self.last_state, self.last_action, self.last_reward, current_state, available_actions)
+
+        action = self.choose_action(current_state, available_actions)
+
+        self.last_state = current_state
+        self.last_action = action
+
+        return GameAction(action[0], action[1])
+
+    def reward(self, points_scored):
+        self.last_reward = 1 if points_scored else -0.1
+
+    def end_game(self, result):
+        if result == 'win':
+            self.last_reward = 1
+        elif result == 'loss':
+            self.last_reward = -1
         else:
-            position = self.get_random_position_with_zero_value(state.col_status)
-        return GameAction(action_type, position)
+            self.last_reward = 0
 
-    def get_random_position_with_zero_value(self, matrix: np.ndarray):
-        [ny, nx] = matrix.shape
-        x = -1
-        y = -1
-        valid = False
-        while not valid:
-            x = random.randrange(0, nx)
-            y = random.randrange(0, ny)
-            valid = matrix[y, x] == 0
-        return (x, y)
+        self.update_q_table(self.last_state, self.last_action, self.last_reward, None, [])
+        self.save_q_table()  # Save the Q-table after each game
+        self.last_state = None
+        self.last_action = None
+        self.last_reward = 0
 
-    def get_all_possible_actions(self, state: GameState):
-        actions = []
-        for y, row in enumerate(state.row_status):
-            for x, val in enumerate(row):
-                if val == 0:
-                    actions.append(GameAction("row", (x, y)))
-        for y, col in enumerate(state.col_status):
-            for x, val in enumerate(col):
-                if val == 0:
-                    actions.append(GameAction("col", (x, y)))
-        return actions
+    def get_available_actions(self, game_state):
+        available_actions = []
+        for y in range(self.number_of_dots):
+            for x in range(self.number_of_dots - 1):
+                if game_state.row_status[y][x] == 0:
+                    available_actions.append(('row', (x, y)))
+        for y in range(self.number_of_dots - 1):
+            for x in range(self.number_of_dots):
+                if game_state.col_status[y][x] == 0:
+                    available_actions.append(('col', (x, y)))
+        return available_actions
 
-    def state_to_tuple(self, state: GameState):
-        return (
-        tuple(state.board_status.flatten()), tuple(state.row_status.flatten()), tuple(state.col_status.flatten()))
+    def is_clickable(self):
+        return False
 
-    def update_exploration_rate(self):
-        self.exploration_rate *= self.exploration_decay
+    def get_player_name(self) -> str:
+        return self.player_name
+
+    def save_q_table(self):
+        try:
+            with open(self.q_table_file, 'wb') as f:
+                pickle.dump(self.q_table, f)
+            print(f"Q-table saved to {self.q_table_file}")
+        except Exception as e:
+            print(f"Error saving Q-table: {e}")
+
+    def load_q_table(self):
+        try:
+            with open(self.q_table_file, 'rb') as f:
+                self.q_table = pickle.load(f)
+            print(f"Q-table loaded from {self.q_table_file}")
+        except FileNotFoundError:
+            print("No existing Q-table found. Starting with a fresh Q-table.")
+        except Exception as e:
+            print(f"Error loading Q-table: {e}")
