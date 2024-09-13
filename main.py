@@ -9,7 +9,7 @@ from players.alpha_beta_agent import AlphaBetaPlayer
 
 if __name__ == "__main__":
     number_of_dots = 5
-    games_num = 1
+    games_num = 10
     # renderer = GUI_Renderer(number_of_dots, True)
     renderer = ConsoleRenderer(number_of_dots)
     # player1 = HumanPlayer(renderer)
@@ -17,10 +17,10 @@ if __name__ == "__main__":
     score2 = 0
     tie = 0
 
-    for i in range(10):
+    for i in range(games_num):
         player1 = AlphaBetaPlayer()
         player2 = ExpectimaxPlayer()
-        game_instance = Dots_and_Boxes(renderer=renderer, games_num=games_num, number_of_dots=number_of_dots,
+        game_instance = Dots_and_Boxes(renderer=renderer, games_num=1, number_of_dots=number_of_dots,
                                        player1=player1, player2=player2)
         game_instance.play()
         score1 += game_instance.get_player1_score()
