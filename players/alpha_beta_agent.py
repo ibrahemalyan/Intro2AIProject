@@ -47,7 +47,7 @@ class AlphaBetaPlayer(Player):
 
         # Start Alpha-Beta Minimax
         score, best_action = self.alpha_beta_search(state, self.depth, -math.inf, math.inf, state.player1_turn)
-        print(f"Best action: {best_action.position}", f"Score: {score}")
+        print(f"Best action: {best_action.position}", f"Score: {score}  ####################################### {state.player1_turn}")
         return best_action
 
     def get_player_name(self) -> str:
@@ -98,7 +98,7 @@ class AlphaBetaPlayer(Player):
         # Combine score difference and chain length score
         total_evaluation = -score_diff
 
-        # print(f"Score diff: {score_diff}, Chain length score: {chain_length_score}")
+        print(f"Score diff: {score_diff}")
         return total_evaluation
 
     def chain_length_evaluation(self, state: GameState):

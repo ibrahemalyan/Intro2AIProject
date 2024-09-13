@@ -10,7 +10,7 @@ from Renderers.console_renderer import ConsoleRenderer
 from players.alpha_beta_agent import AlphaBetaPlayer
 from players.human_player import HumanPlayer
 from players.ProAlphaBeta import ProAlphaBetaPlayer
-
+from game_state import GameState
 
 def create_player(player_name, renderer=None, load_q_table=False):
     if player_name == "RandomPlayer":
@@ -45,6 +45,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     number_of_dots = args.number_of_dots
+    GameState.NUM_OF_DOTS = number_of_dots
     games_num = args.games_num
 
     if args.gui:
@@ -60,7 +61,6 @@ if __name__ == "__main__":
         print("Round:", i + 1)
         player1 = create_player(args.player_1, renderer, load_q_table=args.load_q_table)
         player2 = create_player(args.player_2, renderer, load_q_table=args.load_q_table)
-
         game_instance = Dots_and_Boxes(renderer=renderer, games_num=1, number_of_dots=number_of_dots,
                                        player1=player1, player2=player2)
         game_instance.play()

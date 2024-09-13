@@ -1,12 +1,10 @@
 from copy import deepcopy
 from typing import List
-
 from numpy import ndarray
-
 from game_action import GameAction
 
-
 class GameState:
+    NUM_OF_DOTS = None
     """
     board_status: int[][]
         counts how many lines from the box where taken. if the answer is not in [4,-4] that means the box
@@ -37,8 +35,38 @@ class GameState:
             self.col_status.copy(),
             self.player1_turn
         )
-        new_state._apply_action(action)  # Apply the action to update the board
-        new_state.player1_turn = not self.player1_turn  # Switch turns
+
+        pointsScored = False
+        logical_position = action.position
+        type = action.action_type
+        x = logical_position[0]
+        y = logical_position[1]
+
+        val = 1
+        playerModifier = 1
+        if new_state.player1_turn:
+            playerModifier = -1
+
+        if y < (GameState.NUM_OF_DOTS - 1) and x < (GameState.NUM_OF_DOTS - 1):
+            new_state.board_status[y][x] = (abs(new_state.board_status[y][x]) + val) * playerModifier
+            if abs(new_state.board_status[y][x]) == 4:
+                pointsScored = True
+
+        if type == 'row':
+            new_state.row_status[y][x] = 1
+            if y >= 1:
+                new_state.board_status[y - 1][x] = (abs(new_state.board_status[y - 1][x]) + val) * playerModifier
+                if abs(new_state.board_status[y - 1][x]) == 4:
+                    pointsScored = True
+
+        elif type == 'col':
+            new_state.col_status[y][x] = 1
+            if x >= 1:
+                new_state.board_status[y][x - 1] = (abs(new_state.board_status[y][x - 1]) + val) * playerModifier
+                if abs(new_state.board_status[y][x - 1]) == 4:
+                    pointsScored = True
+
+        new_state.player1_turn = (not new_state.player1_turn) if not pointsScored else new_state.player1_turn
         return new_state
 
     def is_gameover(self):
@@ -56,35 +84,4 @@ class GameState:
                 if self.col_status[y, x] == 0:
                     valid_moves.append(GameAction("col", (x, y)))
         return valid_moves
-
-    def _apply_action(self, action: GameAction):
-        """
-        Apply the action (drawing a row or a column) to the current game state.
-        """
-        x, y = action.position
-        player_modifier = -1 if self.player1_turn else 1
-        val = 1
-
-        if action.action_type == "row":
-            self.row_status[y][x] = 1
-            if y < (self.board_status.shape[0]):
-                self.board_status[y][x] = (abs(self.board_status[y][x]) + val) * player_modifier
-                if abs(self.board_status[y][x]) == 4:
-                    self.pointsScored = True
-            if y >= 1:
-                self.board_status[y-1][x] = (abs(self.board_status[y-1][x]) + val) * player_modifier
-                if abs(self.board_status[y-1][x]) == 4:
-                    self.pointsScored = True
-
-        elif action.action_type == "col":
-            self.col_status[y][x] = 1
-            if x < (self.board_status.shape[1]):
-                self.board_status[y][x] = (abs(self.board_status[y][x]) + val) * player_modifier
-                if abs(self.board_status[y][x]) == 4:
-                    self.pointsScored = True
-            if x >= 1:
-                self.board_status[y][x-1] = (abs(self.board_status[y][x-1]) + val) * player_modifier
-                if abs(self.board_status[y][x-1]) == 4:
-                    self.pointsScored = True
-
 
