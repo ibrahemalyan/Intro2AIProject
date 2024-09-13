@@ -1,18 +1,14 @@
 from typing import Tuple, Literal
 
-import numpy as np
-from game_state import GameState
-from game_action import GameAction
 from players.player import Player
-
+from game_action import GameAction
+from game_state import GameState
+import math
+import numpy as np
 
 class AlphaBetaPlayer(Player):
     def __init__(self, depth=3):
-        super().__init__()
         self.depth = depth
-
-    def get_player_name(self):
-        return "Alpha-Beta Player"
 
     def check_for_free_boxes(self, state: GameState) -> Tuple[Tuple[int, int], Literal['row', 'col']]:
         pos = None
@@ -45,91 +41,73 @@ class AlphaBetaPlayer(Player):
                 return (j+1,i), 'col'
 
     def get_action(self, state: GameState) -> GameAction:
-        best_action = None
-        best_value = float('-inf')
-        alpha = float('-inf')
-        beta = float('inf')
-
         free_box = self.check_for_free_boxes(state)
         if free_box:
-            print(f"Free box found at {free_box[0]} with action type {free_box[1]}")
             return GameAction(free_box[1], free_box[0])
 
-        for action in self.get_all_possible_actions_legal(state):
-            value = self.alpha_beta(self.result(state, action), self.depth, alpha, beta, False)
-            if value > best_value:
-                best_value = value
-                best_action = action
-            alpha = max(alpha, best_value)
-
+        # Start Alpha-Beta Minimax
+        best_score, best_action = self.alpha_beta_search(state, self.depth, -math.inf, math.inf, True)
+        print(f"Best score: {best_score}")
         return best_action
 
-    def alpha_beta(self, state: GameState, depth: int, alpha: float, beta: float, is_maximizing: bool):
-        if  self.is_terminal(state) or depth==0 :
-            return self.evaluate(state)
+    def get_player_name(self) -> str:
+        return "AlphaBetaPlayer"
 
-        if is_maximizing:
-            max_eval = float('-inf')
-            for action in self.get_all_possible_actions_legal(state):
-                eval = self.alpha_beta(self.result(state, action), depth - 1, alpha, beta, False)
-                max_eval = max(max_eval, eval)
-                alpha = max(alpha, eval)
+    def alpha_beta_search(self, state: GameState, depth: int, alpha: float, beta: float, maximizing_player: bool):
+        if depth == 0 or state.is_gameover():
+            return self.evaluate(state), None
+
+        valid_moves = state.get_valid_moves(state)
+        best_move = None
+
+        if maximizing_player:
+            max_eval = -math.inf
+            for action in valid_moves:
+                new_state = state.generate_successor(action)
+                eval_score, _ = self.alpha_beta_search(new_state, depth - 1, alpha, beta, False)
+                if eval_score > max_eval:
+                    max_eval = eval_score
+                    best_move = action
+                alpha = max(alpha, eval_score)
                 if beta <= alpha:
-                    break  # Beta cut-off
-            return max_eval
+                    break
+            return max_eval, best_move
         else:
-            min_eval = float('inf')
-            for action in self.get_all_possible_actions_legal(state):
-                eval = self.alpha_beta(self.result(state, action), depth - 1, alpha, beta, True)
-                min_eval = min(min_eval, eval)
-                beta = min(beta, eval)
+            min_eval = math.inf
+            for action in valid_moves:
+                new_state = state.generate_successor(action)
+                eval_score, _ = self.alpha_beta_search(new_state, depth - 1, alpha, beta, True)
+                if eval_score < min_eval:
+                    min_eval = eval_score
+                    best_move = action
+                beta = min(beta, eval_score)
                 if beta <= alpha:
-                    break  # Alpha cut-off
-            return min_eval
+                    break
+            return min_eval, best_move
 
-    def evaluate(self, state: GameState):
-        # Current score for both players
+    def nearly_completed_boxes(self, state: GameState):
+        # Penalty for creating boxes with 3 lines that the opponent can close
+        penalty = 0
+        for i in range(state.board_status.shape[0]):
+            for j in range(state.board_status.shape[1]):
+                if state.board_status[i][j] == 3:  # Box with 3 lines
+                    penalty += 1  # Apply penalty for leaving a box that opponent can complete
+
+        # If it's Player 1's turn, add penalty, else subtract it
+        if state.player1_turn:
+            return 0 - penalty
+        else:
+            return penalty
+
+    def score_diff(self, state: GameState):
         player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
         player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
         return player1_score - player2_score
 
-    def is_terminal(self, state: GameState):
-        return (state.row_status == 1).all() and (state.col_status == 1).all()
+    def evaluate(self, state: GameState):
+        score_diff = self.score_diff(state)
+        nearly_completed_boxes = self.nearly_completed_boxes(state)
+        return score_diff + len(state.board_status)**2 * nearly_completed_boxes
 
-    def get_all_possible_actions_legal(self, state: GameState):
-        actions = []
-        for y in range(state.row_status.shape[0]):
-            for x in range(state.row_status.shape[1]):
-                if state.row_status[y][x] == 0:
-                    actions.append(GameAction('row', (x, y)))
 
-        for y in range(state.col_status.shape[0]):
-            for x in range(state.col_status.shape[1]):
-                if state.col_status[y][x] == 0:
-                    actions.append(GameAction('col', (x, y)))
 
-        return actions
-
-    def result(self, state: GameState, action: GameAction):
-        # Simulate the action and return the new state
-        new_state = GameState(
-            state.board_status.copy(),
-            state.row_status.copy(),
-            state.col_status.copy(),
-            not state.player1_turn
-        )
-        x, y = action.position
-        if action.action_type == 'row':
-            new_state.row_status[y][x] = 1
-            if y < new_state.board_status.shape[0]:
-                new_state.board_status[y][x] += 1 if new_state.player1_turn else -1
-            if y > 0:
-                new_state.board_status[y - 1][x] += 1 if new_state.player1_turn else -1
-        elif action.action_type =='col':
-            new_state.col_status[y][x] = 1
-            if x < new_state.board_status.shape[1]:
-                new_state.board_status[y][x] += 1 if new_state.player1_turn else -1
-            if x > 0:
-                new_state.board_status[y][x - 1] += 1 if new_state.player1_turn else -1
-
-        return new_state

@@ -1,4 +1,10 @@
+from copy import deepcopy
+from typing import List
+
 from numpy import ndarray
+
+from game_action import GameAction
+
 
 class GameState:
     """
@@ -29,6 +35,63 @@ class GameState:
         self.looney_value = 0  # Looney state (0, 2, or 4)
         self.who_to_play_next = player1_turn  # Next player turn
         self.score_so_far = 0  # Net score difference (P1 - P2)
+
+    def generate_successor(self, action: GameAction) -> 'GameState':
+        new_state = GameState(
+            self.board_status.copy(),
+            self.row_status.copy(),
+            self.col_status.copy(),
+            self.player1_turn
+        )
+        new_state._apply_action(action)  # Apply the action to update the board
+        new_state.player1_turn = not self.player1_turn  # Switch turns
+        return new_state
+
+    def is_gameover(self):
+        return (self.row_status == 1).all() and (self.col_status == 1).all()
+
+
+    def get_valid_moves(self, state: 'GameState'):
+        valid_moves = []
+        for x in range(state.row_status.shape[1]):
+            for y in range(state.row_status.shape[0]):
+                if state.row_status[y, x] == 0:
+                    valid_moves.append(GameAction("row", (x, y)))
+        for x in range(state.col_status.shape[1]):
+            for y in range(state.col_status.shape[0]):
+                if state.col_status[y, x] == 0:
+                    valid_moves.append(GameAction("col", (x, y)))
+        return valid_moves
+
+    def _apply_action(self, action: GameAction):
+        """
+        Apply the action (drawing a row or a column) to the current game state.
+        """
+        x, y = action.position
+        player_modifier = -1 if self.player1_turn else 1
+        val = 1
+
+        if action.action_type == "row":
+            self.row_status[y][x] = 1
+            if y < (self.board_status.shape[0]):
+                self.board_status[y][x] = (abs(self.board_status[y][x]) + val) * player_modifier
+                if abs(self.board_status[y][x]) == 4:
+                    self.pointsScored = True
+            if y >= 1:
+                self.board_status[y-1][x] = (abs(self.board_status[y-1][x]) + val) * player_modifier
+                if abs(self.board_status[y-1][x]) == 4:
+                    self.pointsScored = True
+
+        elif action.action_type == "col":
+            self.col_status[y][x] = 1
+            if x < (self.board_status.shape[1]):
+                self.board_status[y][x] = (abs(self.board_status[y][x]) + val) * player_modifier
+                if abs(self.board_status[y][x]) == 4:
+                    self.pointsScored = True
+            if x >= 1:
+                self.board_status[y][x-1] = (abs(self.board_status[y][x-1]) + val) * player_modifier
+                if abs(self.board_status[y][x-1]) == 4:
+                    self.pointsScored = True
 
     def evaluate_looney_state(self):
         one_edge_boxes = self.get_boxes_with_one_unclaimed_edge()
