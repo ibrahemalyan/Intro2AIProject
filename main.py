@@ -10,7 +10,7 @@ from Renderers.console_renderer import ConsoleRenderer
 from players.alpha_beta_agent import AlphaBetaPlayer
 
 
-def create_player(player_name):
+def create_player(player_name,renderer=None):
     if player_name == "RandomPlayer":
         return RandomPlayer()
     elif player_name == "AlphaBetaPlayer":
@@ -21,6 +21,8 @@ def create_player(player_name):
         return MCTSPlayer()
     elif player_name == "QLearningAgent":
         return QLearningAgent()
+    elif player_name == "HumanPlayer":
+        return GUI_Renderer(renderer)
     else:
         raise ValueError("Invalid player name")
 
@@ -48,7 +50,7 @@ if __name__ == "__main__":
         player1 = AlphaBetaPlayer()
         player2 = ExpectimaxPlayer()
         game_instance = Dots_and_Boxes(renderer=renderer, games_num=1, number_of_dots=number_of_dots,
-                                       player1=create_player(args.player_1), player2=create_player(args.player_2))
+                                       player1=create_player(args.player_1,renderer), player2=create_player(args.player_2,renderer))
         game_instance.play()
         score1 += game_instance.get_player1_score()
         score2 += game_instance.get_player2_score()
