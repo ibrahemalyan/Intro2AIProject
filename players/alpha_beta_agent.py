@@ -1,3 +1,5 @@
+from typing import Tuple, Literal
+
 import numpy as np
 from game_state import GameState
 from game_action import GameAction
@@ -12,11 +14,46 @@ class AlphaBetaPlayer(Player):
     def get_player_name(self):
         return "Alpha-Beta Player"
 
+    def check_for_free_boxes(self, state: GameState) -> Tuple[Tuple[int, int], Literal['row', 'col']]:
+        pos = None
+        for i, row in enumerate(state.board_status):
+            for j, element in enumerate(row):
+                if element == 3 or element == -3:
+                    pos = (i, j)
+
+        if pos:
+            i, j = pos
+
+            # Top horizontal line (from row_status)
+            top_line = state.row_status[i][j]
+            if top_line == 0:
+                return (j,i), 'row'
+
+            # Bottom horizontal line (from row_status)
+            bottom_line = state.row_status[i+1][j]
+            if bottom_line == 0:
+                return (j,i+1), 'row'
+
+            # Left vertical line (from col_status)
+            left_line = state.col_status[i][j]
+            if left_line == 0:
+                return (j,i), 'col'
+
+            # Right vertical line (from col_status)
+            right_line = state.col_status[i][j+1]
+            if right_line == 0:
+                return (j+1,i), 'col'
+
     def get_action(self, state: GameState) -> GameAction:
         best_action = None
         best_value = float('-inf')
         alpha = float('-inf')
         beta = float('inf')
+
+        free_box = self.check_for_free_boxes(state)
+        if free_box:
+            print(f"Free box found at {free_box[0]} with action type {free_box[1]}")
+            return GameAction(free_box[1], free_box[0])
 
         for action in self.get_all_possible_actions_legal(state):
             value = self.alpha_beta(self.result(state, action), self.depth, alpha, beta, False)
@@ -52,32 +89,9 @@ class AlphaBetaPlayer(Player):
 
     def evaluate(self, state: GameState):
         # Current score for both players
-        player1_score = len(np.argwhere(state.board_status == -4))
-        player2_score = len(np.argwhere(state.board_status == 4))
-
-        # Evaluate potential future box completions
-        potential_boxes_player1 = 0
-        potential_boxes_player2 = 0
-
-        for y in range(state.board_status.shape[0]):
-            for x in range(state.board_status.shape[1]):
-                # Count how many sides of the box are filled
-                if state.board_status[y][x] == -3:  # Player 1 is about to complete this box
-                    potential_boxes_player1 += 1
-                elif state.board_status[y][x] == 3:  # Player 2 is about to complete this box
-                    potential_boxes_player2 += 1
-
-        # Difference in current score + potential boxes that could be completed
-        score_difference = (player1_score + potential_boxes_player1) - (player2_score + potential_boxes_player2)
-
-        # Adding weights for strategic positioning
-        # Player who can complete a box next turn gains more value
-        if state.player1_turn:
-            score_difference += potential_boxes_player1 * 2  # Bias towards player 1's turn
-        else:
-            score_difference -= potential_boxes_player2 * 2  # Bias towards player 2's turn
-
-        return score_difference
+        player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
+        player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
+        return player1_score - player2_score
 
     def is_terminal(self, state: GameState):
         return (state.row_status == 1).all() and (state.col_status == 1).all()

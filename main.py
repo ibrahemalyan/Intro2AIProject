@@ -9,6 +9,7 @@ from Renderers.gui_renderer import GUI_Renderer
 from Renderers.console_renderer import ConsoleRenderer
 from players.alpha_beta_agent import AlphaBetaPlayer
 from players.human_player import HumanPlayer
+from players.newAlphaBeta import NewAlphaBetaPlayer
 
 
 def create_player(player_name, renderer=None, load_q_table=False):
@@ -24,6 +25,8 @@ def create_player(player_name, renderer=None, load_q_table=False):
         return QLearningAgent(load_q_table=load_q_table)  # Load Q-table if needed
     elif player_name == "HumanPlayer":
         return HumanPlayer(renderer)
+    elif player_name == "pro":
+        return NewAlphaBetaPlayer()
     else:
         raise ValueError(f"Invalid player name: {player_name}")
 
