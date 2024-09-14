@@ -1,4 +1,5 @@
 import argparse
+import pickle
 
 from players.expectimax_agent import ExpectimaxPlayer
 from players.monte_carlo_agent import MCTSPlayer
@@ -58,6 +59,9 @@ if __name__ == "__main__":
     score2 = 0
     tie = 0
 
+
+    eval_lst = [(0, 0, 0)]
+
     for i in range(games_num):
         print("Round:", i + 1)
         player1 = create_player(args.player_1, renderer, load_q_table=args.load_q_table)
@@ -71,18 +75,29 @@ if __name__ == "__main__":
         tie += game_instance.get_tie()
 
         if isinstance(player1, QLearningAgent):
+            result = 'win' if score1 > score2 else 'loss' if score1 < score2 else 'tie'
+            player1.reward(player1.round_end_reward(result))
             if args.save_q_table:
                 player1.save_q_table()
-            result = 'win' if score1 > score2 else 'loss' if score1 < score2 else 'tie'
         if isinstance(player2, QLearningAgent):
+            result = 'win' if score2 > score1 else 'loss' if score2 < score1 else 'tie'
+            player2.reward(player2.round_end_reward(result))
             if args.save_q_table:
                 player2.save_q_table()
-            result = 'win' if score2 > score1 else 'loss' if score2 < score1 else 'tie'
+
+        if (i+1) % 1000 == 0:
+            e1 = eval_lst[-1][0]
+            e2 = eval_lst[-1][1]
+            e3 = eval_lst[-1][2]
+            eval_lst.append((score1-e1, score2-e2, tie-e3))
 
         print("---------------------------------------------------------------------------")
+
+    print(eval_lst)
 
     print("---------------------------------------------------------------------------")
     print("Final Results:")
     print(f"Player 1 ({args.player_1}): {score1}")
     print(f"Player 2 ({args.player_2}): {score2}")
     print(f"Tie: {tie}")
+
