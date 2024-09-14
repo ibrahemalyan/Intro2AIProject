@@ -1,122 +1,138 @@
+from random import random
+from typing import Tuple, Literal
+import math
 import numpy as np
-import random
-
-from game_state import GameState
 from players.player import Player
 from game_action import GameAction
-from typing import Tuple, List
-import math
+from game_state import GameState
 
 
 class ExpectimaxPlayer(Player):
-    def __init__(self, max_depth=3):
-        super().__init__()
-        self.max_depth = max_depth
+    def __init__(self, depth=3):
+        self.depth = depth
+
+    def check_for_free_boxes(self, state: GameState) -> Tuple[Tuple[int, int], Literal['row', 'col']]:
+        pos = None
+        for i, row in enumerate(state.board_status):
+            for j, element in enumerate(row):
+                if element == 3 or element == -3:
+                    pos = (i, j)
+
+        if pos:
+            i, j = pos
+            # Top horizontal line (from row_status)
+            top_line = state.row_status[i][j]
+            if top_line == 0:
+                return (j, i), 'row'
+
+            # Bottom horizontal line (from row_status)
+            bottom_line = state.row_status[i + 1][j]
+            if bottom_line == 0:
+                return (j, i + 1), 'row'
+
+            # Left vertical line (from col_status)
+            left_line = state.col_status[i][j]
+            if left_line == 0:
+                return (j, i), 'col'
+
+            # Right vertical line (from col_status)
+            right_line = state.col_status[i][j + 1]
+            if right_line == 0:
+                return (j + 1, i), 'col'
 
     def get_action(self, state: GameState) -> GameAction:
-        # Start the Expectimax search from the root (current game state)
-        best_action, _ = self.expectimax(state, self.max_depth, maximizing_player=True)
+        free_box = self.check_for_free_boxes(state)
+        if free_box:
+            return GameAction(free_box[1], free_box[0])
+
+        # Start Expectimax search
+        score, best_action = self.expectimax_search(state, self.depth)
         return best_action
-
-    def expectimax(self, state: GameState, depth: int, maximizing_player: bool):
-        """
-        Expectimax algorithm: recursively explore the game tree.
-        - If it's the maximizing player's turn, pick the move with the highest value.
-        - If it's the opponent's or chance node, take the expected value of all possible moves.
-        """
-        if depth == 0 or self.is_terminal(state):
-            return None, self.evaluate(state)
-
-        possible_actions = self.get_possible_actions(state)
-
-        if maximizing_player:
-            # Max node: Choose the move with the highest value
-            max_value = -math.inf
-            best_action = None
-            for action_type, position in possible_actions:
-                new_state = self.simulate_action(state, action_type, position, maximizing_player=True)
-                _, value = self.expectimax(new_state, depth - 1, maximizing_player=False)
-                if value > max_value:
-                    max_value = value
-                    best_action = GameAction(action_type, position)
-            return best_action, max_value
-
-        else:
-            # Chance node: Take the expected value of all possible outcomes
-            total_value = 0
-            for action_type, position in possible_actions:
-                new_state = self.simulate_action(state, action_type, position, maximizing_player=False)
-                _, value = self.expectimax(new_state, depth - 1, maximizing_player=True)
-                total_value += value
-            average_value = total_value / len(possible_actions)
-            return None, average_value
-
-    def simulate_action(self, state: GameState, action_type: str, position: Tuple[int, int],
-                        maximizing_player: bool) -> GameState:
-        """
-        Simulate taking an action in the current state. This function returns a new game state.
-        """
-        new_board_status = state.board_status.copy()
-        new_row_status = state.row_status.copy()
-        new_col_status = state.col_status.copy()
-
-        x, y = position
-        playerModifier = 1 if maximizing_player else -1
-
-        if action_type == 'row':
-            new_row_status[y][x] = 1
-            if y < len(new_board_status):
-                new_board_status[y][x] += playerModifier
-            if y > 0:
-                new_board_status[y - 1][x] += playerModifier
-
-        elif action_type == 'col':
-            new_col_status[y][x] = 1
-            if x < len(new_board_status[0]):
-                new_board_status[y][x] += playerModifier
-            if x > 0:
-                new_board_status[y][x - 1] += playerModifier
-
-        return GameState(
-            board_status=new_board_status,
-            row_status=new_row_status,
-            col_status=new_col_status,
-            player1_turn=not state.player1_turn
-        )
-
-    def get_possible_actions(self, state: GameState) -> List[Tuple[str, Tuple[int, int]]]:
-        """
-        Return a list of possible actions given the current game state.
-        """
-        possible_actions = []
-
-        # Check for available rows and columns (not yet marked)
-        for y in range(len(state.row_status)):
-            for x in range(len(state.row_status[0])):
-                if state.row_status[y][x] == 0:  # Available row
-                    possible_actions.append(('row', (x, y)))
-
-        for y in range(len(state.col_status)):
-            for x in range(len(state.col_status[0])):
-                if state.col_status[y][x] == 0:  # Available col
-                    possible_actions.append(('col', (x, y)))
-
-        return possible_actions
-
-    def is_terminal(self, state: GameState) -> bool:
-        """
-        Check if the game is over.
-        """
-        return np.all(state.row_status == 1) and np.all(state.col_status == 1)
-
-    def evaluate(self, state: GameState) -> float:
-        """
-        Evaluates the game state. Positive values favor the maximizing player (Player 1),
-        while negative values favor the minimizing player (Player 2).
-        """
-        player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
-        player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
-        return player1_score - player2_score
 
     def get_player_name(self) -> str:
         return "ExpectimaxPlayer"
+
+    def expectimax_search(self, state: GameState, depth: int):
+        if depth == 0 or state.is_gameover():
+            return self.evaluate(state), None
+
+        valid_moves = state.get_valid_moves()
+        random.shuffle(valid_moves)
+        best_move = None
+
+        maximizing_player = state.player1_turn
+        if maximizing_player:
+            max_eval = -math.inf
+            for action in valid_moves:
+                new_state = state.generate_successor(action)
+                eval_score, _ = self.expectimax_search(new_state, depth - 1)
+                if eval_score > max_eval:
+                    max_eval = eval_score
+                    best_move = action
+            return max_eval, best_move
+        else:
+            expected_value = 0
+            for action in valid_moves:
+                new_state = state.generate_successor(action)
+                eval_score, _ = self.expectimax_search(new_state, depth - 1)
+                expected_value += eval_score / len(valid_moves)  # Taking the average of all possible outcomes
+            return expected_value, None
+
+    def score_diff(self, state: GameState):
+        player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
+        player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
+        return player2_score - player1_score
+
+    def evaluate(self, state: GameState):
+        score_diff = self.score_diff(state)
+        chain_length_score = self.chain_length_evaluation(state)
+
+        # Combine score difference and chain length score
+        total_evaluation = score_diff + chain_length_score
+        return total_evaluation
+
+    def chain_length_evaluation(self, state: GameState):
+        """
+        Evaluate the state by considering the lengths of chains of free boxes.
+        Longer chains are rewarded.
+        """
+        chain_length_score = 0
+
+        # Check each box in the board
+        for y in range(state.board_status.shape[0]):
+            for x in range(state.board_status.shape[1]):
+                if abs(state.board_status[y, x]) == 3:  # Free box with 3 sides
+                    chain_length_score += self.detect_chain_length(state, x, y)
+
+        return chain_length_score
+
+    def detect_chain_length(self, state: GameState, x: int, y: int):
+        """
+        Recursively detect the length of a chain starting from a box with 3 sides.
+        A chain is a sequence of boxes that are directly adjacent to each other with only one side missing.
+        """
+        visited = set()
+        return self._chain_length_dfs(state, x, y, visited)
+
+    def _chain_length_dfs(self, state: GameState, x: int, y: int, visited: set):
+        if (x, y) in visited:
+            return 0
+        if abs(state.board_status[y, x]) != 3:
+            return 0
+
+        # Mark the box as visited
+        visited.add((x, y))
+
+        chain_length = 1  # Start with the current box
+
+        # Check neighboring boxes (up, down, left, right)
+        if y > 0:
+            chain_length += self._chain_length_dfs(state, x, y - 1, visited)  # up
+        if y < state.board_status.shape[0] - 1:
+            chain_length += self._chain_length_dfs(state, x, y + 1, visited)  # down
+        if x > 0:
+            chain_length += self._chain_length_dfs(state, x - 1, y, visited)  # left
+        if x < state.board_status.shape[1] - 1:
+            chain_length += self._chain_length_dfs(state, x + 1, y, visited)  # right
+
+        return chain_length

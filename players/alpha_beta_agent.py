@@ -1,3 +1,4 @@
+import random
 from typing import Tuple, Literal
 
 from players.player import Player
@@ -58,6 +59,7 @@ class AlphaBetaPlayer(Player):
             return self.evaluate(state), None
 
         valid_moves = state.get_valid_moves()
+        random.shuffle(valid_moves)
         best_move = None
 
         maximizing_player = state.player1_turn
