@@ -1,21 +1,23 @@
-import os
-import pickle
-
-import numpy as np
 import random
-from game_action import GameAction
+import pickle
+import os
 from players.player import Player
 from game_state import GameState
 
-
 class QLearningAgent(Player):
-    def __init__(self, learning_rate=0.1, discount_factor=0.95, epsilon=0.1, load_q_table=False, q_table_file='q_table.pkl'):
-        self.q_table = {}  # A dictionary to store Q-values
-        self.learning_rate = learning_rate
-        self.q_table_file = q_table_file
+
+
+    def __init__(self,filename='QLstate.pickle', discount_factor=0.5, learning_rate=0.8, epsilon=0.2,load_q_table=False):
+        self.q_table = {}
         self.discount_factor = discount_factor
+        self.learning_rate = learning_rate
         self.epsilon = epsilon
-        self.last_state_action = None  # Track the last state-action pair
+        self.q_table_file = filename
+
+        self.last_state = None
+        self.last_action = None
+        self.training = True
+
         if load_q_table:
             self.load_q_table()
 
@@ -26,54 +28,53 @@ class QLearningAgent(Player):
                 tuple(state.col_status.flatten()),
                 state.player1_turn)
 
-    def get_action(self, state: GameState) -> GameAction:
-        """Decide the next action using an epsilon-greedy policy."""
+    def get_action(self, state):
+        """Choose an action based on epsilon-greedy strategy."""
+        actions = state.get_valid_moves()
+        self.last_state = state
         state_key = self.get_state_key(state)
 
-        if random.random() < self.epsilon:
-            # Exploration: random move
-            valid_moves = state.get_valid_moves()
-            return random.choice(valid_moves)
+
+        max_q_value = -float('inf')
+        self.last_action = -1
+
+        # Exploration vs. Exploitation (Epsilon-Greedy Strategy)
+        choice = random.random()
+        eps_threshold = 1 - self.epsilon - (self.epsilon / len(actions))
+
+        # Explore
+        if choice > eps_threshold:
+            # Randomly pick an action
+            self.last_action = random.choice(list(actions))
+            # print(f"Exploring: chose action {self.last_action} for state {state}")
+        # Exploit
         else:
-            # Exploitation: choose the best move from Q-table
             if state_key not in self.q_table:
-                self.q_table[state_key] = {action: 0.0 for action in state.get_valid_moves()}
+                self.q_table[state_key] = {action: -1 for action in state.get_valid_moves()}
 
-            best_action = max(self.q_table[state_key], key=self.q_table[state_key].get)
-            return best_action
+            # Choose the action with the highest Q-value
+            self.last_action = max(self.q_table[state_key], key=self.q_table[state_key].get)
+        return self.last_action
 
-    def update_q_value(self, old_state, action, reward, new_state):
+    def reward(self, feedback, new_state, actions):
+        """Update the Q-value using the Q-learning update rule."""
+        q_prev = self.q_table[self.last_state][self.last_action]
+
+        max_q_new_state = 0
+        if actions:
+            max_q_new_state = max(self.q_table[new_state][action] for action in actions)
+
+        # Q-learning formula: Q(s, a) = Q(s, a) + lr * (reward + discount * max(Q(s', a')) - Q(s, a))
+        q_new = q_prev + self.learning_rate * (feedback + self.discount_factor * max_q_new_state - q_prev)
+
+        # Save updated Q-value
+        self.update_q_value(self.last_state, self.last_action, q_new)
+
+
+    def update_q_value(self, state, action, q_new):
         """Update the Q-value based on the reward and the new state."""
-        old_state_key = self.get_state_key(old_state)
-        new_state_key = self.get_state_key(new_state)
-
-        if old_state_key not in self.q_table:
-            self.q_table[old_state_key] = {action: 0.0 for action in old_state.get_valid_moves()}
-        if new_state_key not in self.q_table:
-            self.q_table[new_state_key] = {action: 0.0 for action in new_state.get_valid_moves()}
-
-        old_q_value = self.q_table[old_state_key][action]
-        max_future_q_value = max(self.q_table[new_state_key].values())
-
-        # Q-learning formula
-        new_q_value = old_q_value + self.learning_rate * (
-                    reward + self.discount_factor * max_future_q_value - old_q_value)
-        self.q_table[old_state_key][action] = new_q_value
-
-
-    def end_game(self, result):
-        """At the end of the game, adjust rewards based on win/loss."""
-        if result == 'win':
-            reward = 1
-        elif result == 'loss':
-            reward = -1
-        else:
-            reward = 0
-
-        # Update the last state-action pair with the final result
-        if self.last_state_action is not None:
-            last_state, last_action = self.last_state_action
-            self.update_q_value(last_state, last_action, reward, last_state)
+        state_key = self.get_state_key(state)
+        self.q_table[state_key][action] = q_new
 
     def save_q_table(self):
         """Save the Q-table to a file."""

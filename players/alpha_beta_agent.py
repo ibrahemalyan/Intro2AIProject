@@ -42,9 +42,9 @@ class AlphaBetaPlayer(Player):
                 return (j + 1, i), 'col'
 
     def get_action(self, state: GameState) -> GameAction:
-        free_box = self.check_for_free_boxes(state)
-        if free_box:
-            return GameAction(free_box[1], free_box[0])
+        # free_box = self.check_for_free_boxes(state)
+        # if free_box:
+        #     return GameAction(free_box[1], free_box[0])
 
         # Start Alpha-Beta Minimax
         score, best_action = self.alpha_beta_search(state, self.depth, -math.inf, math.inf)
@@ -99,7 +99,7 @@ class AlphaBetaPlayer(Player):
         chain_length_score = self.chain_length_evaluation(state)
 
         # Combine score difference and chain length score
-        total_evaluation = score_diff
+        total_evaluation = score_diff - chain_length_score
 
         # print(f"Score diff: {score_diff}")
         return total_evaluation

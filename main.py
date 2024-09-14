@@ -74,12 +74,10 @@ if __name__ == "__main__":
             if args.save_q_table:
                 player1.save_q_table()
             result = 'win' if score1 > score2 else 'loss' if score1 < score2 else 'tie'
-            player1.end_game(result)
         if isinstance(player2, QLearningAgent):
             if args.save_q_table:
                 player2.save_q_table()
             result = 'win' if score2 > score1 else 'loss' if score2 < score1 else 'tie'
-            player2.end_game(result)
 
         print("---------------------------------------------------------------------------")
 
