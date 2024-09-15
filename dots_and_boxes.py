@@ -144,3 +144,4 @@ class Dots_and_Boxes():
             self.player1_turn
         ))
         self.update(action.action_type, action.position)
+
