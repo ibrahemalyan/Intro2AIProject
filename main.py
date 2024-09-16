@@ -15,7 +15,7 @@ import heurestics
 from game_state import GameState
 
 
-def create_player(player_name, heurestic, depth=3, renderer=None, load_q_table=False):
+def create_player(player_name, heurestic, depth=3, renderer=None, load_q_table=None):
     if player_name == "Random":
         return RandomPlayer()
     elif player_name == "AlphaBeta":
@@ -25,7 +25,7 @@ def create_player(player_name, heurestic, depth=3, renderer=None, load_q_table=F
     elif player_name == "MCTS":
         return MCTSPlayer()
     elif player_name == "QLearning":
-        return QLearningAgent(load_q_table=load_q_table)  # Load Q-table if needed
+        return QLearningAgent(q_table_file=load_q_table)  # Load Q-table if needed
     elif player_name == "Human":
         return HumanPlayer(renderer)
     else:
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument('-h1', "--heuristic_1", default='score_diff', help="Choose from: score_diff, back_cross")
     parser.add_argument('-h2', "--heuristic_2", default='score_diff', help="Choose from: score_diff, back_cross")
     parser.add_argument("--gui", action="store_true", help="Enable GUI renderer instead of console")
-    parser.add_argument("--load_q_table", default=None, help="Load Q-table for QLearningAgent")
+    parser.add_argument("--load_q_table", default='', help="path to Load Q-table for QLearningAgent")
     parser.add_argument("--eval", action="store_true", help="save the results while training")
     parser.add_argument("--depth", type=int, default=3, help="file to save the results")
 
@@ -61,8 +61,12 @@ if __name__ == "__main__":
     GameState.NUM_OF_DOTS = number_of_dots
     games_num = args.games_num
 
+    if args.player_2 == "Expectimax":
+        raise ValueError("Expectimax cannot be the second player")
+
     if args.gui:
         renderer = GUI_Renderer(number_of_dots)
+
     else:
         renderer = ConsoleRenderer(number_of_dots)
 
