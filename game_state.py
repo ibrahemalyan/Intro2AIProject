@@ -22,21 +22,15 @@ class GameState:
     player1_turn: bool
         True if it is player 1 turn, False for player 2.
     """
-    def __init__(self, board_status: ndarray, row_status: ndarray, col_status: ndarray, player1_turn: bool):
+    def __init__(self, board_status: ndarray, row_status: ndarray, col_status: ndarray, player1_turn: bool, pointsScored: bool = False):
         self.board_status = board_status
         self.row_status = row_status
         self.col_status = col_status
         self.player1_turn = player1_turn
+        self.pointsScored = pointsScored
 
     def generate_successor(self, action: GameAction) -> 'GameState':
-        new_state = GameState(
-            self.board_status.copy(),
-            self.row_status.copy(),
-            self.col_status.copy(),
-            self.player1_turn
-        )
-
-        pointsScored = False
+        new_state = deepcopy(self)
         logical_position = action.position
         type = action.action_type
         x = logical_position[0]
@@ -44,29 +38,31 @@ class GameState:
 
         val = 1
         playerModifier = 1
-        if new_state.player1_turn:
+        if not new_state.player1_turn:
             playerModifier = -1
-
-        if y < (GameState.NUM_OF_DOTS - 1) and x < (GameState.NUM_OF_DOTS - 1):
+        new_state.player1_turn = (not new_state.player1_turn) if not new_state.pointsScored else new_state.player1_turn
+        new_state.pointsScored = False
+        if y < (GameState.NUM_OF_DOTS-1) and x < (GameState.NUM_OF_DOTS-1):
             new_state.board_status[y][x] = (abs(new_state.board_status[y][x]) + val) * playerModifier
             if abs(new_state.board_status[y][x]) == 4:
-                pointsScored = True
+                new_state.pointsScored = True
 
         if type == 'row':
             new_state.row_status[y][x] = 1
             if y >= 1:
-                new_state.board_status[y - 1][x] = (abs(new_state.board_status[y - 1][x]) + val) * playerModifier
-                if abs(new_state.board_status[y - 1][x]) == 4:
-                    pointsScored = True
+                new_state.board_status[y-1][x] = (abs(new_state.board_status[y-1][x]) + val) * playerModifier
+                if abs(new_state.board_status[y-1][x]) == 4:
+                    new_state.pointsScored = True
 
         elif type == 'col':
             new_state.col_status[y][x] = 1
             if x >= 1:
-                new_state.board_status[y][x - 1] = (abs(new_state.board_status[y][x - 1]) + val) * playerModifier
-                if abs(new_state.board_status[y][x - 1]) == 4:
-                    pointsScored = True
+                new_state.board_status[y][x-1] = (abs(new_state.board_status[y][x-1]) + val) * playerModifier
+                if abs(new_state.board_status[y][x-1]) == 4:
+                    new_state.pointsScored = True
 
-        new_state.player1_turn = (not new_state.player1_turn) if not pointsScored else new_state.player1_turn
+        # new_state.player1_turn = new_state.player1_turn if not pointsScored else (not new_state.player1_turn)
+
         return new_state
 
     def is_gameover(self):
@@ -85,3 +81,5 @@ class GameState:
                     valid_moves.append(GameAction("col", (x, y)))
         return valid_moves
 
+    def copy(self):
+        return deepcopy(self)

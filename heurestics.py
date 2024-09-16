@@ -3,12 +3,24 @@ import numpy as np
 from typing import Tuple, Literal
 
 
+def is_endgame(state: GameState):
+    for i, row in enumerate(state.board_status):
+        for j, element in enumerate(row):
+            if element == 1 or element == -1:
+                return False
+    return True
+
+
 def backCross(state: GameState):
     score = score_diff(state)
     chain_length_score = chain_len(state)
-    if chain_len(state,start_box=3) == 1 and chain_len(state,start_box=2) >= 1 and not check_for_free_boxes(state):
-        return -score
-    return score - chain_length_score
+
+    if chain_len(state, start_box=3) == 1 and chain_len(state, start_box=2) >= 1 and is_endgame(state):
+        return 1000
+    # if is_endgame(state):
+    #     return score + chain_len(state, start_box=2)
+    return score
+
 
 
 def check_for_free_boxes(state: GameState):
@@ -40,10 +52,12 @@ def check_for_free_boxes(state: GameState):
         if right_line == 0:
             return (j + 1, i), 'col'
 
+
 def score_diff(state: GameState):
     player1_score = np.sum(state.board_status == 4)  # Player 1 completed boxes
     player2_score = np.sum(state.board_status == -4)  # Player 2 completed boxes
-    return player2_score - player1_score
+    print(player1_score - player2_score)
+    return player1_score - player2_score
 
 
 def chain_length_evaluation(state: GameState):
@@ -51,7 +65,7 @@ def chain_length_evaluation(state: GameState):
     Evaluate the state by considering the lengths of chains of free boxes.
     Longer chains are rewarded, but avoid creating short chains too early.
     """
-    if chain_len(state) :
+    if chain_len(state):
         return 0
 
 
@@ -185,4 +199,3 @@ def chain_len(game_state: GameState, start_box=3) -> int:
                 longest_chain = max(longest_chain, chain_length)
 
     return longest_chain
-

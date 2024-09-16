@@ -17,9 +17,9 @@ class GUI_Renderer(Renderer):
         self.symbol_thickness = 50
         self.dot_color = '#7BC043'
         self.player1_color = '#0492CF'
-        self.player1_color_light = '#67B0CF'
+        self.player2_color_light = '#67B0CF'
         self.player2_color = '#EE4035'
-        self.player2_color_light = '#EE7E77'
+        self.player1_color_light = '#EE7E77'
         self.Green_color = '#7BC043'
         self.dot_width = 0.25 * self.size_of_board / number_of_dots
         self.edge_width = 0.1 * self.size_of_board / number_of_dots
