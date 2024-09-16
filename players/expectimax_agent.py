@@ -42,10 +42,6 @@ class ExpectimaxPlayer(Player):
                 return (j + 1, i), 'col'
 
     def get_action(self, state: GameState) -> GameAction:
-        free_box = self.check_for_free_boxes(state)
-        if free_box:
-            return GameAction(free_box[1], free_box[0])
-
         # Start Expectimax search
         score, best_action = self.expectimax_search(state, self.depth)
         return best_action

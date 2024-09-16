@@ -9,15 +9,14 @@ from game_state import GameState
 
 
 class QLearningAgent(Player):
-    def __init__(self, learning_rate=0.1, discount_factor=0.95, epsilon=0.1, load_q_table=False,
-                 q_table_file=None):
+    def __init__(self, learning_rate=0.1, discount_factor=0.95, epsilon=0.1,q_table_file=None):
         self.q_table = {}  # A dictionary to store Q-values
         self.learning_rate = learning_rate
         self.q_table_file = q_table_file
         self.discount_factor = discount_factor
         self.epsilon = epsilon
         self.last_state_action = None  # Track the last state-action pair
-        if load_q_table:
+        if q_table_file:
             self.load_q_table()
 
     def get_state_key(self, state: GameState):

@@ -40,7 +40,7 @@ class GUI_Renderer(Renderer):
             self.canvas.delete(self.score_text_handle)
         self.score_text_handle = self.canvas.create_text(self.size_of_board / 2,
                                                          self.size_of_board - 20,
-                                                         font="cmr 15 bold",
+                                                         font="cmr 11 bold",
                                                          fill="black",
                                                          text=score_text)
 

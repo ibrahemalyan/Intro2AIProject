@@ -16,6 +16,9 @@ from game_state import GameState
 
 
 def create_player(player_name, heurestic, depth=3, renderer=None, load_q_table=None):
+    """
+    Create player object based on the player name
+    """
     if player_name == "Random":
         return RandomPlayer()
     elif player_name == "AlphaBeta":
@@ -33,42 +36,30 @@ def create_player(player_name, heurestic, depth=3, renderer=None, load_q_table=N
 
 
 def get_heurestic(hereustic):
+    """
+    Get the heuristic function based on the heuristic name
+    """
     if hereustic == "score_diff":
         return heurestics.score_diff
-    elif hereustic == "back_cross":
-        return heurestics.backCross
+    elif hereustic == "chain_len":
+        return heurestics.chain_length_evaluation
+    elif hereustic == "combined":
+        return heurestics.combined
+    elif hereustic == "avoid_3rd_line":
+        return heurestics.avoid_3rd_line
     else:
         raise ValueError(f"Invalid hereustic name: {hereustic}")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Dots and Boxes")
-    parser.add_argument("-d", "--number_of_dots", type=int, default=4)
-    parser.add_argument("-n", "--games_num", type=int, default=10)
-    parser.add_argument("-p1", "--player_1", required=True,
-                        help="Choose from: Random, AlphaBeta, Expectimax, MCTS, QLearning, Human")
-    parser.add_argument("-p2", "--player_2", required=True,
-                        help="Choose from: Random, AlphaBeta, Expectimax, MCTS, QLearning, Human")
-    parser.add_argument('-h1', "--heuristic_1", default='score_diff', help="Choose from: score_diff, back_cross")
-    parser.add_argument('-h2', "--heuristic_2", default='score_diff', help="Choose from: score_diff, back_cross")
-    parser.add_argument("--gui", action="store_true", help="Enable GUI renderer instead of console")
-    parser.add_argument("--load_q_table", default='', help="path to Load Q-table for QLearningAgent")
-    parser.add_argument("--eval", action="store_true", help="save the results while training")
-    parser.add_argument("--depth", type=int, default=3, help="file to save the results")
-
-    args = parser.parse_args()
-    number_of_dots = args.number_of_dots
-    GameState.NUM_OF_DOTS = number_of_dots
-    games_num = args.games_num
-
-    if args.player_2 == "Expectimax":
-        raise ValueError("Expectimax cannot be the second player")
-
+def run(player1, player2, renderer, number_of_dots, games_num):
+    """
+    Run the game
+    """
     if args.gui:
-        renderer = GUI_Renderer(number_of_dots)
-
-    else:
-        renderer = ConsoleRenderer(number_of_dots)
+        game_instance = Dots_and_Boxes(renderer=renderer, games_num=games_num, number_of_dots=number_of_dots,
+                                       player1=player1, player2=player2)
+        game_instance.play()
+        return
 
     score1 = 0
     score2 = 0
@@ -83,10 +74,6 @@ if __name__ == "__main__":
 
     for i in range(games_num):
         print("Round:", i + 1)
-        player1 = create_player(args.player_1, get_heurestic(args.heuristic_1), renderer=renderer, depth=args.depth,
-                                load_q_table=args.load_q_table)
-        player2 = create_player(args.player_2, get_heurestic(args.heuristic_2), renderer=renderer, depth=args.depth,
-                                load_q_table=args.load_q_table)
         game_instance = Dots_and_Boxes(renderer=renderer, games_num=1, number_of_dots=number_of_dots,
                                        player1=player1, player2=player2)
         game_instance.play()
@@ -123,3 +110,40 @@ if __name__ == "__main__":
     print(f"Player 1 ({args.player_1}): {score1}")
     print(f"Player 2 ({args.player_2}): {score2}")
     print(f"Tie: {tie}")
+    print(f"{score1}:{score2}:{tie}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Dots and Boxes")
+    parser.add_argument("-s", "--board_size", type=int, default=4)
+    parser.add_argument("-n", "--games_num", type=int, default=10)
+    parser.add_argument("-p1", "--player_1", required=True,
+                        help="Choose from: Random, AlphaBeta, Expectimax, MCTS, QLearning, Human")
+    parser.add_argument("-p2", "--player_2", required=True,
+                        help="Choose from: Random, AlphaBeta, Expectimax, MCTS, QLearning, Human")
+    parser.add_argument('-h1', "--heuristic_1", default='score_diff', help="Choose from: score_diff, back_cross")
+    parser.add_argument('-h2', "--heuristic_2", default='score_diff', help="Choose from: score_diff, back_cross")
+    parser.add_argument("--gui", action="store_true", help="Enable GUI renderer instead of console")
+    parser.add_argument("--load_q_table", default='', help="path to Load Q-table for QLearningAgent")
+    parser.add_argument("--eval", action="store_true", help="save the results while training")
+    parser.add_argument("--depth", type=int, default=3, help="file to save the results")
+
+    args = parser.parse_args()
+    number_of_dots = args.board_size + 1
+    GameState.NUM_OF_DOTS = number_of_dots
+    games_num = args.games_num
+
+    if args.player_2 == "Expectimax":
+        raise ValueError("Expectimax cannot be the second player")
+
+    if args.gui:
+        renderer = GUI_Renderer(number_of_dots)
+
+    else:
+        renderer = ConsoleRenderer(number_of_dots)
+
+    player1 = create_player(args.player_1, get_heurestic(args.heuristic_1), renderer=renderer, depth=args.depth,
+                            load_q_table=args.load_q_table)
+    player2 = create_player(args.player_2, get_heurestic(args.heuristic_2), renderer=renderer, depth=args.depth,
+                            load_q_table=args.load_q_table)
+    run(player1, player2, renderer, number_of_dots, games_num)

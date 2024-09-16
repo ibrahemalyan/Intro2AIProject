@@ -3,12 +3,13 @@ import numpy as np
 from typing import Tuple, Literal
 
 
-def backCross(state: GameState):
+def combined(state: GameState):
     score = score_diff(state)
-    chain_length_score = chain_len(state)
+    chain_length_score = chain_len(state, start_box=3)
     if chain_len(state,start_box=3) == 1 and chain_len(state,start_box=2) >= 1 and not check_for_free_boxes(state):
         return -score
     return score - chain_length_score
+
 
 
 def check_for_free_boxes(state: GameState):
@@ -51,8 +52,12 @@ def chain_length_evaluation(state: GameState):
     Evaluate the state by considering the lengths of chains of free boxes.
     Longer chains are rewarded, but avoid creating short chains too early.
     """
-    if chain_len(state) :
-        return 0
+    return -chain_len(state, start_box=2)
+
+def avoid_3rd_line(state: GameState):
+    v1 = np.sum(state.board_status == -3)  # Player 1 completed boxes
+    v2 = np.sum(state.board_status == 3)  # Player 2 completed boxes
+    return v1-v2
 
 
 def double_cross_evaluation(state: GameState):
@@ -140,7 +145,7 @@ def check_common_line_between_boxes(game_state: GameState, y1: int, x1: int, y2:
     return False
 
 
-def chain_len(game_state: GameState, start_box=3) -> int:
+def chain_len(game_state: GameState, start_box=2) -> int:
     rows, cols = game_state.board_status.shape
     visited = [[False for _ in range(cols)] for _ in range(rows)]
 
