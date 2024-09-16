@@ -102,6 +102,7 @@ class GUI_Renderer(Renderer):
         self.canvas.create_line(start_x, start_y, end_x, end_y, fill=color, width=self.edge_width)
 
     def display_gameover(self, player1_score, player2_score):
+
         if player1_score > player2_score:
             text = 'Winner: Player 1 '
             color = self.player1_color
@@ -111,6 +112,7 @@ class GUI_Renderer(Renderer):
         else:
             text = 'Its a tie'
             color = 'gray'
+        self.window.quit()
 
         self.canvas.delete("all")
         self.canvas.create_text(self.size_of_board / 2, self.size_of_board / 3, font="cmr 60 bold", fill=color, text=text)
@@ -162,8 +164,9 @@ class GUI_Renderer(Renderer):
         self.canvas.delete("all")
         if self.show_round_end_screen:
             self.display_gameover(player1_score, player2_score)
-        self.refresh_board()
-        self.game_start=True
+        self.window.quit()
+        # self.refresh_board()
+        # self.game_start=True
 
     def display_final_score(self, winner_scores):
         self.canvas.delete("all")
